@@ -29,7 +29,8 @@ namespace i8080
 	{
 		string ret = "";
 		// read in the instruction
-		unsigned char _op = m_file.get();
+		unsigned int _op = m_file.get();
+		if (_op > 255) return ret;
 		opcode op = opcodes[_op];
 
 		// add our base mnemonic into our return string

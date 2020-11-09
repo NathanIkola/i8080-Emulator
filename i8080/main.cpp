@@ -16,7 +16,7 @@
 
 int main()
 {
-	i8080::Disassembler disassembler("invaders.bin");
+	i8080::Disassembler disassembler("test.bin");
 	while (disassembler.HasContent())
 	{
 		string s = disassembler.GetLine();

@@ -79,11 +79,6 @@ namespace i8080
 		uint8_t& get_reg(const uint8_t& arg) noexcept;
 
 		//******************************
-		// Get condition code
-		//******************************
-		uint8_t get_ccc() noexcept;
-
-		//******************************
 		// NOP instruction
 		//******************************
 		inline uint8_t nop(const uint8_t& arg) noexcept { return 0; };
@@ -104,6 +99,46 @@ namespace i8080
 		uint8_t mvi(const uint8_t& arg) noexcept;
 
 		//******************************
+		// CALL instruction
+		//******************************
+		uint8_t call(const uint8_t& arg) noexcept;
+
+		//******************************
+		// LDAX instruction
+		//******************************
+		uint8_t ldax(const uint8_t& arg) noexcept;
+
+		//******************************
+		// MOV instruction
+		//******************************
+		uint8_t mov(const uint8_t& arg) noexcept;
+
+		//******************************
+		// INX instruction
+		//******************************
+		uint8_t inx(const uint8_t& arg) noexcept;
+
+		//******************************
+		// DCR instruction
+		//******************************
+		uint8_t dcr(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Conditional JMP instruction
+		//******************************
+		uint8_t jc(const uint8_t& arg) noexcept;
+
+		//******************************
+		// RET instruction
+		//******************************
+		uint8_t ret(const uint8_t& arg) noexcept;
+
+		//******************************
+		// CPI instruction
+		//******************************
+		uint8_t cpi(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept { abort(); }
@@ -111,11 +146,16 @@ namespace i8080
 		//******************************
 		// Read in 2 bytes
 		//******************************
-		inline uint16_t read16() noexcept { PC += 2; return ((file.get()) | (file.get() << 8)); }
+		inline uint16_t read16() noexcept { PC += 2; return ((memory[PC-2]) | (memory[PC-1] << 8)); }
 
 		//*******************************
 		// Read in 1 byte
 		//*******************************
-		inline uint8_t read8() noexcept { ++PC; return file.get(); }
+		inline uint8_t read8() noexcept { return memory[PC++]; }
+
+		//*******************************
+		// Load the program
+		//*******************************
+		void load_program(uint16_t offset = 0) noexcept;
 	};
 }
