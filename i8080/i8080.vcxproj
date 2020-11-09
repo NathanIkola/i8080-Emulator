@@ -140,12 +140,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="disassembler.h" />
+    <ClInclude Include="i8080.h" />
     <ClInclude Include="mnemonics.h" />
     <ClInclude Include="opcodes.h" />
     <ClInclude Include="static_warning.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="disassembler.cpp" />
+    <ClCompile Include="i8080.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

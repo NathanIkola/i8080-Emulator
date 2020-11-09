@@ -36,6 +36,9 @@
     <ClInclude Include="static_warning.h">
       <Filter>Header Files\Utility</Filter>
     </ClInclude>
+    <ClInclude Include="i8080.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -43,6 +46,9 @@
     </ClCompile>
     <ClCompile Include="disassembler.cpp">
       <Filter>Source Files\Disassembler</Filter>
+    </ClCompile>
+    <ClCompile Include="i8080.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

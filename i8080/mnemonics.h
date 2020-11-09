@@ -68,7 +68,7 @@ namespace i8080
         "CMA",   
                  
         "NOP",   
-        "LCI     SP, ",
+        "LXI     SP, ",
         "STA",   
         "INX     SP",
         "INR     M",

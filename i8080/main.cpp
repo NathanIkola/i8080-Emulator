@@ -12,13 +12,13 @@
 
 #include "static_warning.h"
 #include "disassembler.h"
+#include "i8080.h"
 
 int main()
 {
-	i8080::Disassembler disassembler("cpudiag.bin");
+	i8080::i8080 cpu("invaders.h");
 
-	while (disassembler.HasContent())
-		std::cout << disassembler.GetLine() << std::endl;
+	cpu.run();
 
 	return 0;
 }
