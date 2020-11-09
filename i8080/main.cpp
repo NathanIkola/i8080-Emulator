@@ -16,7 +16,14 @@
 
 int main()
 {
-	i8080::i8080 cpu("invaders.h");
+	i8080::Disassembler disassembler("invaders.bin");
+	while (disassembler.HasContent())
+	{
+		string s = disassembler.GetLine();
+		std::cout << s << std::endl;
+	}
+
+	i8080::i8080 cpu("invaders.bin");
 
 	cpu.run();
 
