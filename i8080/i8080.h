@@ -13,6 +13,10 @@
 #include <array>
 #include <cstdint>
 
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
 namespace i8080
 {
 	class i8080 final
@@ -50,6 +54,9 @@ namespace i8080
 		uint8_t L = 0;
 		uint16_t PC = 0;
 		uint16_t SP = PC;
+
+		uint16_t address_bus = 0;
+		uint8_t data_bus = 0;
 
 		uint8_t* memory;
 
@@ -139,9 +146,41 @@ namespace i8080
 		uint8_t cpi(const uint8_t& arg) noexcept;
 
 		//******************************
+		// PUSH instruction
+		//******************************
+		uint8_t push(const uint8_t& arg) noexcept;
+
+		//******************************
+		// POP instruction
+		//******************************
+		uint8_t pop(const uint8_t& arg) noexcept;
+
+		//******************************
+		// HLT instruction
+		//******************************
+		inline uint8_t hlt(const uint8_t& arg) noexcept { return 2; }
+
+		//******************************
+		// DAD instruction
+		//******************************
+		uint8_t dad(const uint8_t& arg) noexcept;
+
+		//******************************
+		// EXCHG instruction
+		//******************************
+		uint8_t exchg(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
-		inline uint8_t bad(const uint8_t& arg) noexcept { abort(); }
+		inline uint8_t bad(const uint8_t& arg) noexcept 
+		{
+			std::stringstream lineno;
+			lineno << "0x" << std::setfill('0') << std::setw(4) << std::hex << PC - 1 << "  ";
+			lineno << "0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint16_t>(arg) << "  ";
+			std::cout << lineno.str() << std::endl;
+			abort(); 
+		}
 
 		//******************************
 		// Read in 2 bytes

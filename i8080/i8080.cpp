@@ -10,9 +10,6 @@
 #include "i8080.h"
 
 #include <assert.h>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
 #include "opcodes.h"
 
 //**************************************
@@ -78,11 +75,6 @@ namespace i8080
 		else
 		{
 			op = read8();
-
-			std::stringstream lineno;
-			lineno << "0x" << std::setfill('0') << std::setw(4) << std::hex << PC - 1 << "  ";
-			lineno << "0x" << std::setfill('0') << std::setw(4) << std::hex << static_cast<uint16_t>(op) << "  ";
-			std::cout << lineno.str() << std::endl;
 
 			uint8_t result = (*this.*operations[op])(op);
 			// result of 0 means success, and take the dur duration
@@ -347,6 +339,56 @@ namespace i8080
 	}
 
 	//**********************************
+	// PUSH instruction
+	//**********************************
+	inline uint8_t i8080::push(const uint8_t& arg) noexcept
+	{
+		uint16_t val = read_rp(rp(arg));
+		assert(SP > 1);
+		SP -= 2;
+		memory[SP + 2] = (val >> 8) & 0xFF;
+		memory[SP + 1] = (val & 0xFF);
+		return 0;
+	}
+
+	//******************************
+	// POP instruction
+	//******************************
+	uint8_t i8080::pop(const uint8_t& arg) noexcept
+	{
+		// get the last two bytes from the stack
+		SP += 2;
+		uint16_t val = memory[SP - 1];
+		val |= memory[SP] << 8;
+		write_rp(rp(arg), val);
+		return 0;
+	}
+
+	//**********************************
+	// DAD instruction
+	//**********************************
+	uint8_t i8080::dad(const uint8_t& arg) noexcept
+	{
+		uint16_t hl = read_rp(2);
+		hl += read_rp(rp(arg));
+		write_rp(2, hl);
+		return 0;
+	}
+
+	//**********************************
+	// EXCHG instruction
+	//**********************************
+	uint8_t i8080::exchg(const uint8_t& arg) noexcept
+	{
+		uint16_t de = read_rp(1);
+		uint16_t hl = read_rp(2);
+		// swap HL and DE
+		write_rp(2, de);
+		write_rp(1, hl);
+		return 0;
+	}
+
+	//**********************************
 	// Load the program
 	//**********************************
 	void i8080::load_program(uint16_t offset) noexcept
@@ -384,6 +426,7 @@ namespace i8080
 		operations[0x03] = &i8080::inx;
 		operations[0x05] = &i8080::dcr;
 		operations[0x06] = &i8080::mvi;
+		operations[0x09] = &i8080::dad;
 		operations[0x0A] = &i8080::ldax;
 		operations[0x0E] = &i8080::mvi;
 
@@ -391,6 +434,7 @@ namespace i8080
 		operations[0x13] = &i8080::inx;
 		operations[0x15] = &i8080::dcr;
 		operations[0x16] = &i8080::mvi;
+		operations[0x19] = &i8080::dad;
 		operations[0x1A] = &i8080::ldax;
 		operations[0x1E] = &i8080::mvi;
 
@@ -398,12 +442,14 @@ namespace i8080
 		operations[0x25] = &i8080::dcr;
 		operations[0x21] = &i8080::lxi;
 		operations[0x26] = &i8080::mvi;
+		operations[0x29] = &i8080::dad;
 		operations[0x2E] = &i8080::mvi;
 
 		operations[0x33] = &i8080::inx;
 		operations[0x35] = &i8080::dcr;
 		operations[0x31] = &i8080::lxi;
 		operations[0x36] = &i8080::mvi;
+		operations[0x39] = &i8080::dad;
 		operations[0x3E] = &i8080::mvi;
 
 		operations[0x40] = &i8080::mov;
@@ -463,6 +509,7 @@ namespace i8080
 		operations[0x73] = &i8080::mov;
 		operations[0x74] = &i8080::mov;
 		operations[0x75] = &i8080::mov;
+		operations[0x76] = &i8080::hlt;
 		operations[0x77] = &i8080::mov;
 		operations[0x78] = &i8080::mov;
 		operations[0x79] = &i8080::mov;
@@ -473,19 +520,28 @@ namespace i8080
 		operations[0x7E] = &i8080::mov;
 		operations[0x7F] = &i8080::mov;
 
+		operations[0xC1] = &i8080::pop;
 		operations[0xC2] = &i8080::jc;
 		operations[0xC3] = &i8080::jmp;
+		operations[0xC5] = &i8080::push;
 		operations[0xC9] = &i8080::ret;
 		operations[0xCA] = &i8080::jc;
 		operations[0xCD] = &i8080::call;
 
+		operations[0xD1] = &i8080::pop;
 		operations[0xD2] = &i8080::jc;
+		operations[0xD5] = &i8080::push;
 		operations[0xDA] = &i8080::jc;
 
+		operations[0xE1] = &i8080::pop;
 		operations[0xE2] = &i8080::jc;
+		operations[0xE5] = &i8080::push;
 		operations[0xEA] = &i8080::jc;
+		operations[0xEB] = &i8080::exchg;
 
+		operations[0xF1] = &i8080::pop;
 		operations[0xF2] = &i8080::jc;
+		operations[0xF5] = &i8080::push;
 		operations[0xFA] = &i8080::jc;
 		operations[0xFE] = &i8080::cpi;
 	}
