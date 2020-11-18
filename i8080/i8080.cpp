@@ -44,6 +44,20 @@ inline uint8_t ccc(const uint8_t& in)
 	return ((in >> 3) & 7);
 }
 
+//**************************************
+// Get the parity of a number
+//**************************************
+inline uint8_t parity(uint8_t in)
+{
+	bool odd_parity = false;
+	while (in != 0)
+	{
+		if (in & 0x01) odd_parity = !odd_parity;
+		in >>= 1;
+	}
+	return odd_parity;
+}
+
 namespace i8080
 {
 	namespace flags
@@ -258,10 +272,10 @@ namespace i8080
 	//******************************
 	uint8_t i8080::dcr(const uint8_t& arg) noexcept
 	{
-		// reset the flags
+		// reset all flags but carry
 		F &= C;
 
-		// get our value
+		// get our value (by reference!)
 		uint8_t& val = get_reg(dest(arg));
 		// if subtracting will make it negative, then set the sign bit
 		if (val == 0)
@@ -273,12 +287,9 @@ namespace i8080
 		else val -= 1;
 
 		// if the value was less than 0, set the sign bit
-		// reset all bits
-		F &= C;
-
 		if (val == 0) F |= flags::Z;
 		// didn't implement aux. carry
-		else if (!(val & 1)) F |= flags::P;
+		else if (parity(val)) F |= flags::P;
 
 		return 0;
 	}
@@ -389,6 +400,124 @@ namespace i8080
 	}
 
 	//**********************************
+	// OUT instruction
+	//**********************************
+	uint8_t i8080::out(const uint8_t& arg) noexcept
+	{
+		// not a lot we can do here yet
+		// so ignore the command
+		// but we do need to read the port address in
+		read8();
+		return 0;
+	}
+
+	//**********************************
+	// RRC instruction
+	//**********************************
+	uint8_t i8080::rrc(const uint8_t& arg) noexcept
+	{
+		// rotate right, so capture the lowest order bit
+		// (evaluates to 0 or 1)
+		uint8_t _ar = A & 0x01;
+		// rotate the bit over
+		A = (A >> 1) | (_ar << 7);
+		// set the carry if _ar == 1
+		if (_ar) F |= flags::C;
+		// otherwise clear it
+		else F &= ~flags::C;
+		return 0;
+	}
+
+	//**********************************
+	// ANI instruction
+	//**********************************
+	uint8_t i8080::ani(const uint8_t& arg) noexcept
+	{
+		// read in the value we are &'ing with A
+		uint8_t val = read8();
+		A &= val;
+		// clear all flags
+		F = 0;
+		// set our flags as necessary
+		if (A == 0) F |= flags::Z;
+		else if (static_cast<int8_t>(~A + 1) < 0) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+		return 0;
+	}
+
+	//**********************************
+	// ADI instruction
+	//**********************************
+	uint8_t i8080::adi(const uint8_t& arg) noexcept
+	{
+		// read in the value we are adding to A
+		uint8_t val = read8();
+		// clear all flags
+		F = 0;
+		// if we overflow, this will trip the carry flag
+		if (static_cast<uint8_t>(A + val) < A) F |= flags::C;
+		A += val;
+
+		if (A == 0) F |= flags::Z;
+		else if (static_cast<int8_t>(~A + 1) < 0) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// LDA instruction
+	//******************************
+	uint8_t i8080::lda(const uint8_t& arg) noexcept
+	{
+		// load into A from the address
+		// next in the program
+		uint16_t addr = read16();
+		// read in this address
+		// exception risk, can read out of bounds
+		// if memory size < addr
+		A = memory[addr];
+		return 0;
+	}
+
+	//******************************
+	// ANA instruction
+	//******************************
+	uint8_t i8080::ana(const uint8_t& arg) noexcept
+	{
+		// & A with the register specified
+		A &= get_reg(source(arg));
+		// clear all flags
+		F = 0;
+		// set our flags as necessary
+		if (A == 0) F |= flags::Z;
+		else if (static_cast<int8_t>(~A + 1) < 0) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+		return 0;
+	}
+
+	//**********************************
+	// Conditional RET instruction
+	//**********************************
+	uint8_t i8080::rc(const uint8_t& arg) noexcept
+	{
+		uint8_t con = ccc(arg);
+		// get the address we want to jump to
+		uint16_t addr = read16();
+		if ((con == 0 && !(F & flags::Z)) || (con == 1 && (F & flags::Z))
+			|| (con == 2 && !(F & flags::C)) || (con == 3 && (F & flags::C))
+			|| (con == 4 && !(F & flags::P)) || (con == 5 && (F & flags::P))
+			|| (con == 6 && !(F & flags::S)) || (con == 7 && (F & flags::S)))
+		{
+			SP += 2;
+			PC = memory[SP - 1];
+			PC |= memory[SP] << 8;
+			return 1;
+		}
+		return 0;
+	}
+
+	//**********************************
 	// Load the program
 	//**********************************
 	void i8080::load_program(uint16_t offset) noexcept
@@ -428,7 +557,9 @@ namespace i8080
 		operations[0x06] = &i8080::mvi;
 		operations[0x09] = &i8080::dad;
 		operations[0x0A] = &i8080::ldax;
+		operations[0x0D] = &i8080::dcr;
 		operations[0x0E] = &i8080::mvi;
+		operations[0x0F] = &i8080::rrc;
 
 		operations[0x11] = &i8080::lxi;
 		operations[0x13] = &i8080::inx;
@@ -436,6 +567,7 @@ namespace i8080
 		operations[0x16] = &i8080::mvi;
 		operations[0x19] = &i8080::dad;
 		operations[0x1A] = &i8080::ldax;
+		operations[0x1D] = &i8080::dcr;
 		operations[0x1E] = &i8080::mvi;
 
 		operations[0x23] = &i8080::inx;
@@ -443,6 +575,7 @@ namespace i8080
 		operations[0x21] = &i8080::lxi;
 		operations[0x26] = &i8080::mvi;
 		operations[0x29] = &i8080::dad;
+		operations[0x2D] = &i8080::dcr;
 		operations[0x2E] = &i8080::mvi;
 
 		operations[0x33] = &i8080::inx;
@@ -450,6 +583,8 @@ namespace i8080
 		operations[0x31] = &i8080::lxi;
 		operations[0x36] = &i8080::mvi;
 		operations[0x39] = &i8080::dad;
+		operations[0x3A] = &i8080::lda;
+		operations[0x3D] = &i8080::dcr;
 		operations[0x3E] = &i8080::mvi;
 
 		operations[0x40] = &i8080::mov;
@@ -520,28 +655,48 @@ namespace i8080
 		operations[0x7E] = &i8080::mov;
 		operations[0x7F] = &i8080::mov;
 
+		operations[0xA0] = &i8080::ana;
+		operations[0xA1] = &i8080::ana;
+		operations[0xA2] = &i8080::ana;
+		operations[0xA3] = &i8080::ana;
+		operations[0xA4] = &i8080::ana;
+		operations[0xA5] = &i8080::ana;
+		operations[0xA6] = &i8080::ana;
+		operations[0xA7] = &i8080::ana;
+
+		operations[0xC0] = &i8080::rc;
 		operations[0xC1] = &i8080::pop;
 		operations[0xC2] = &i8080::jc;
 		operations[0xC3] = &i8080::jmp;
 		operations[0xC5] = &i8080::push;
+		operations[0xC6] = &i8080::adi;
+		operations[0xC8] = &i8080::rc;
 		operations[0xC9] = &i8080::ret;
 		operations[0xCA] = &i8080::jc;
 		operations[0xCD] = &i8080::call;
 
+		operations[0xD0] = &i8080::rc;
 		operations[0xD1] = &i8080::pop;
 		operations[0xD2] = &i8080::jc;
+		operations[0xD3] = &i8080::out;
 		operations[0xD5] = &i8080::push;
+		operations[0xD8] = &i8080::rc;
 		operations[0xDA] = &i8080::jc;
 
+		operations[0xE0] = &i8080::rc;
 		operations[0xE1] = &i8080::pop;
 		operations[0xE2] = &i8080::jc;
 		operations[0xE5] = &i8080::push;
+		operations[0xE6] = &i8080::ani;
+		operations[0xE8] = &i8080::rc;
 		operations[0xEA] = &i8080::jc;
 		operations[0xEB] = &i8080::exchg;
 
+		operations[0xF0] = &i8080::rc;
 		operations[0xF1] = &i8080::pop;
 		operations[0xF2] = &i8080::jc;
 		operations[0xF5] = &i8080::push;
+		operations[0xF8] = &i8080::rc;
 		operations[0xFA] = &i8080::jc;
 		operations[0xFE] = &i8080::cpi;
 	}

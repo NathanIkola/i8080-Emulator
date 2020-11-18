@@ -171,6 +171,41 @@ namespace i8080
 		uint8_t exchg(const uint8_t& arg) noexcept;
 
 		//******************************
+		// OUT instruction
+		//******************************
+		uint8_t out(const uint8_t& arg) noexcept;
+
+		//******************************
+		// RRC instruction
+		//******************************
+		uint8_t rrc(const uint8_t& arg) noexcept;
+
+		//******************************
+		// ANI instruction
+		//******************************
+		uint8_t ani(const uint8_t& arg) noexcept;
+
+		//******************************
+		// ADI instruction
+		//******************************
+		uint8_t adi(const uint8_t& arg) noexcept;
+
+		//******************************
+		// LDA instruction
+		//******************************
+		uint8_t lda(const uint8_t& arg) noexcept;
+
+		//******************************
+		// ANA instruction
+		//******************************
+		uint8_t ana(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Conditional RET instruction
+		//******************************
+		uint8_t rc(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept 
