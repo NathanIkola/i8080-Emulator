@@ -16,14 +16,14 @@
 
 int main()
 {
-	i8080::Disassembler disassembler("test.bin");
+	i8080::Disassembler disassembler("cpudiag.bin", 0x100);
 	while (disassembler.HasContent())
 	{
 		string s = disassembler.GetLine();
 		std::cout << s << std::endl;
 	}
 
-	i8080::i8080 cpu("invaders.bin");
+	i8080::i8080 cpu("cpudiag.bin", 0xFFFF, 0x100);
 
 	cpu.run();
 

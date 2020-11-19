@@ -12,6 +12,14 @@
 #include <assert.h>
 #include "opcodes.h"
 
+#define DEBUG_MESSAGES
+
+#ifdef DEBUG_MESSAGES
+#define MSG std::cout << "0x" << std::setfill('0') << std::setw(4) << std::hex << PC << "\n"
+#else
+#define MSG void()
+#endif
+
 //**************************************
 // Get the RP from an instruction
 //**************************************
@@ -49,13 +57,13 @@ inline uint8_t ccc(const uint8_t& in)
 //**************************************
 inline uint8_t parity(uint8_t in)
 {
-	bool odd_parity = false;
+	bool even_parity = true;
 	while (in != 0)
 	{
-		if (in & 0x01) odd_parity = !odd_parity;
+		if (in & 0x01) even_parity = !even_parity;
 		in >>= 1;
 	}
-	return odd_parity;
+	return even_parity;
 }
 
 namespace i8080
@@ -88,8 +96,8 @@ namespace i8080
 		}
 		else
 		{
+			MSG;
 			op = read8();
-
 			uint8_t result = (*this.*operations[op])(op);
 			// result of 0 means success, and take the dur duration
 			if (result == 0)
@@ -301,20 +309,22 @@ namespace i8080
 	{
 		// get the 2's complement of the value
 		uint8_t val = read8();
+		// put it in 2's complement negative
 		val = ~val + 1;
-		// compare the two
+		// perform A + -val
 		int16_t result = A + val;
 		// clear the flags
-		F &= C;
+		F &= 0;
 
 		// lower byte is equal
-		if (!(result & 0xFF)) 
+		if ((result & 0xFF) == 0) 
 			F |= flags::Z;
-		// they have different signs (because val is actually -val)
-		else if (!(result >> 8))
-		{
-			F |= flags::C;
-		}
+		// set the carry bit as required
+		else if (!(result & (1 << 8))) F |= flags::C;
+		// flip the carry bit if the numbers were of a different sign
+		// note that the sign of val is inverted now, so if they are
+		// equal then the signs were different initially
+		if ((val >> 7 == A >> 7) || (val == 0) && A >> 7) F ^= flags::C;
 		return 0;
 	}
 
@@ -407,7 +417,7 @@ namespace i8080
 		// not a lot we can do here yet
 		// so ignore the command
 		// but we do need to read the port address in
-		read8();
+		uint8_t addr = read8();
 		return 0;
 	}
 
@@ -440,7 +450,7 @@ namespace i8080
 		F = 0;
 		// set our flags as necessary
 		if (A == 0) F |= flags::Z;
-		else if (static_cast<int8_t>(~A + 1) < 0) F |= flags::S;
+		else if (A & 0x80) F |= flags::S;
 		if (parity(A)) F |= flags::P;
 		return 0;
 	}
@@ -459,7 +469,7 @@ namespace i8080
 		A += val;
 
 		if (A == 0) F |= flags::Z;
-		else if (static_cast<int8_t>(~A + 1) < 0) F |= flags::S;
+		else if (A & 0x80) F |= flags::S;
 		if (parity(A)) F |= flags::P;
 
 		return 0;
@@ -491,7 +501,7 @@ namespace i8080
 		F = 0;
 		// set our flags as necessary
 		if (A == 0) F |= flags::Z;
-		else if (static_cast<int8_t>(~A + 1) < 0) F |= flags::S;
+		else if (A & 0x80) F |= flags::S;
 		if (parity(A)) F |= flags::P;
 		return 0;
 	}
@@ -531,7 +541,7 @@ namespace i8080
 	//**********************************
 	// Constructor
 	//**********************************
-	i8080::i8080(const char* filename, uint16_t size) 
+	i8080::i8080(const char* filename, uint16_t size, uint16_t offset) 
 		: memory(nullptr), file(filename, std::ios_base::binary), operations()
 	{
 		if (!file.is_open()) throw -1;
@@ -540,9 +550,12 @@ namespace i8080
 
 		// first allocate the amount of memory that we want
 		memory = new uint8_t[static_cast<int>(size) + 1];
-		load_program();
 
 		// read in the file to memory
+		load_program(offset);
+
+		// set our offset
+		PC = offset;
 
 		// start initializing the array of operations
 		// by filling it with operations which crash

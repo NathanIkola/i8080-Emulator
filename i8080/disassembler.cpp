@@ -17,8 +17,8 @@
 
 namespace i8080
 {
-	Disassembler::Disassembler(string filename)
-		: m_file(filename, std::ios_base::binary), m_line(0)
+	Disassembler::Disassembler(string filename, uint16_t offset)
+		: m_file(filename, std::ios_base::binary), m_line(offset)
 	{
 		if (!m_file.is_open()) throw -1;
 	}

@@ -25,7 +25,7 @@ namespace i8080
 		//******************************
 		// Constructor
 		//******************************
-		i8080(const char* filename, uint16_t size = 0xFFFF);
+		i8080(const char* filename, uint16_t size = 0xFFFF, uint16_t offset = 0x0);
 
 		//******************************
 		// Destructor
@@ -64,6 +64,9 @@ namespace i8080
 
 		// map functions to opcodes
 		std::array<uint8_t(i8080::i8080::*)(const uint8_t&), 256> operations;
+
+		// debug information for the current step we are on
+		uint16_t current_step = 0;
 
 		//******************************
 		// Run one cycle

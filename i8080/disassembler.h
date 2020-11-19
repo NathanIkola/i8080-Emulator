@@ -26,7 +26,7 @@ namespace i8080
 		// Throws -1 when file could
 		// not be opened properly
 		//******************************
-		Disassembler(string filename);
+		Disassembler(string filename, uint16_t offset = 0);
 
 		//******************************
 		// Destructor, clean up the file
