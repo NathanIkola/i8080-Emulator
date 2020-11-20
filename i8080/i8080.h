@@ -209,6 +209,36 @@ namespace i8080
 		uint8_t rc(const uint8_t& arg) noexcept;
 
 		//******************************
+		// ACI instruction
+		//******************************
+		uint8_t aci(const uint8_t& arg) noexcept;
+
+		//******************************
+		// SUI instruction
+		//******************************
+		uint8_t sui(const uint8_t& arg) noexcept;
+
+		//******************************
+		// SBI instruction
+		//******************************
+		uint8_t sbi(const uint8_t& arg) noexcept;
+
+		//******************************
+		// ORI instruction
+		//******************************
+		uint8_t ori(const uint8_t& arg) noexcept;
+
+		//******************************
+		// XRI instruction
+		//******************************
+		uint8_t xri(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Conditional CALL instruction
+		//******************************
+		uint8_t cc(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept 

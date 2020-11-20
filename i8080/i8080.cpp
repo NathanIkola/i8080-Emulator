@@ -235,8 +235,8 @@ namespace i8080
 		// store our return address on the stack
 		assert(SP > 1);
 		SP -= 2;
-		memory[SP+2] = (ret >> 8) & 0xFF;
-		memory[SP+1] = (ret & 0xFF);
+		memory[SP + 2] = (ret >> 8) & 0xFF;
+		memory[SP + 1] = (ret & 0xFF);
 		return 0;
 	}
 
@@ -317,7 +317,7 @@ namespace i8080
 		F &= 0;
 
 		// lower byte is equal
-		if ((result & 0xFF) == 0) 
+		if ((result & 0xFF) == 0)
 			F |= flags::Z;
 		// set the carry bit as required
 		else if (!(result & (1 << 8))) F |= flags::C;
@@ -342,7 +342,6 @@ namespace i8080
 			|| (con == 6 && !(F & flags::S)) || (con == 7 && (F & flags::S)))
 		{
 			PC = addr;
-			return 0;
 		}
 		return 0;
 	}
@@ -354,7 +353,7 @@ namespace i8080
 	{
 		// get the last two bytes from the stack
 		SP += 2;
-		PC = memory[SP-1];
+		PC = memory[SP - 1];
 		PC |= memory[SP] << 8;
 		return 0;
 	}
@@ -450,8 +449,9 @@ namespace i8080
 		F = 0;
 		// set our flags as necessary
 		if (A == 0) F |= flags::Z;
-		else if (A & 0x80) F |= flags::S;
+		else if (A >> 7) F |= flags::S;
 		if (parity(A)) F |= flags::P;
+
 		return 0;
 	}
 
@@ -522,8 +522,114 @@ namespace i8080
 			SP += 2;
 			PC = memory[SP - 1];
 			PC |= memory[SP] << 8;
-			return 1;
+			return 0;
 		}
+		return 1;
+	}
+
+	//******************************
+	// ACI instruction
+	//******************************
+	uint8_t i8080::aci(const uint8_t& arg) noexcept
+	{
+		// read in the value we are adding to A
+		uint8_t val = read8();
+		// capture our carry flag so we can add it in later
+		uint8_t c = (F & flags::C) == 1;
+		// clear all flags
+		F = 0;
+		// if we overflow, this will trip the carry flag
+		if (static_cast<uint8_t>(A + val + c) < A) F |= flags::C;
+		A += val + c;
+
+		if (A == 0) F |= flags::Z;
+		else if (A & 0x80) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// SUI instruction
+	//******************************
+	uint8_t i8080::sui(const uint8_t& arg) noexcept
+	{
+		// load the immediate value
+		uint8_t val = read8();
+		// put number into 2's complement
+		val = ~val + 1;
+
+		// reset our flags
+		F = 0;
+
+		// see if we are going to underflow
+		if (static_cast<uint8_t>(A + val) > A) F |= flags::C;
+		A += val;
+		if (A == 0) F |= flags::Z;
+		else if (A >> 7) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// SBI instruction
+	//******************************
+	uint8_t i8080::sbi(const uint8_t& arg) noexcept
+	{
+		// load the immediate value
+		uint8_t val = read8();
+		// add the carry bit
+		if (F & flags::C) ++val;
+		// calculate the 2's complement
+		val = ~val + 1;
+		// clear the flags
+		F = 0;
+
+		// see if we will underflow
+		if (static_cast<uint8_t>(A + val) > A) F |= flags::C;
+		A += val;
+		if (A == 0) F |= flags::Z;
+		else if (A >> 7) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// ORI instruction
+	//******************************
+	uint8_t i8080::ori(const uint8_t& arg) noexcept
+	{
+		// load the immediate value
+		uint8_t val = read8();
+		// use bitwise OR on A
+		A |= val;
+		// clear the flags
+		F = 0;
+		if (A == 0) F |= flags::Z;
+		else if (A >> 7) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// XRI instruction
+	//******************************
+	uint8_t i8080::xri(const uint8_t& arg) noexcept
+	{
+		// get the immediate value
+		uint8_t val = read8();
+		// use bitwise XOR
+		A ^= val;
+		// clear the flags
+		F = 0;
+
+		if (A == 0) F |= flags::Z;
+		else if (A >> 7) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
 		return 0;
 	}
 
@@ -536,6 +642,33 @@ namespace i8080
 		while (!file.eof()) memory[offset++] = file.get();
 		// set the stack to where the program finished
 		SP = offset;
+	}
+
+	//******************************
+	// Conditional CALL instruction
+	//******************************
+	uint8_t i8080::cc(const uint8_t& arg) noexcept
+	{
+		uint8_t con = ccc(arg);
+		// get the address we want to jump to
+		uint16_t target = read16();
+		if ((con == 0 && !(F & flags::Z)) || (con == 1 && (F & flags::Z))
+			|| (con == 2 && !(F & flags::C)) || (con == 3 && (F & flags::C))
+			|| (con == 4 && !(F & flags::P)) || (con == 5 && (F & flags::P))
+			|| (con == 6 && !(F & flags::S)) || (con == 7 && (F & flags::S)))
+		{
+			// save our return address
+			uint16_t ret = PC;
+			PC = target;
+			// store our return address on the stack
+			assert(SP > 1);
+			SP -= 2;
+			memory[SP + 2] = (ret >> 8) & 0xFF;
+			memory[SP + 1] = (ret & 0xFF);
+			return 0;
+		}
+
+		return 1;
 	}
 
 	//**********************************
@@ -681,36 +814,49 @@ namespace i8080
 		operations[0xC1] = &i8080::pop;
 		operations[0xC2] = &i8080::jc;
 		operations[0xC3] = &i8080::jmp;
+		operations[0xC4] = &i8080::cc;
 		operations[0xC5] = &i8080::push;
 		operations[0xC6] = &i8080::adi;
 		operations[0xC8] = &i8080::rc;
 		operations[0xC9] = &i8080::ret;
 		operations[0xCA] = &i8080::jc;
+		operations[0xCC] = &i8080::cc;
 		operations[0xCD] = &i8080::call;
+		operations[0xCE] = &i8080::aci;
 
 		operations[0xD0] = &i8080::rc;
 		operations[0xD1] = &i8080::pop;
 		operations[0xD2] = &i8080::jc;
 		operations[0xD3] = &i8080::out;
+		operations[0xD4] = &i8080::cc;
 		operations[0xD5] = &i8080::push;
+		operations[0xD6] = &i8080::sui;
 		operations[0xD8] = &i8080::rc;
 		operations[0xDA] = &i8080::jc;
+		operations[0xDC] = &i8080::cc;
+		operations[0xDE] = &i8080::sbi;
 
 		operations[0xE0] = &i8080::rc;
 		operations[0xE1] = &i8080::pop;
 		operations[0xE2] = &i8080::jc;
+		operations[0xE4] = &i8080::cc;
 		operations[0xE5] = &i8080::push;
 		operations[0xE6] = &i8080::ani;
 		operations[0xE8] = &i8080::rc;
 		operations[0xEA] = &i8080::jc;
 		operations[0xEB] = &i8080::exchg;
+		operations[0xEC] = &i8080::cc;
+		operations[0xEE] = &i8080::xri;
 
 		operations[0xF0] = &i8080::rc;
 		operations[0xF1] = &i8080::pop;
 		operations[0xF2] = &i8080::jc;
+		operations[0xF4] = &i8080::cc;
 		operations[0xF5] = &i8080::push;
+		operations[0xF6] = &i8080::ori;
 		operations[0xF8] = &i8080::rc;
 		operations[0xFA] = &i8080::jc;
+		operations[0xFC] = &i8080::cc;
 		operations[0xFE] = &i8080::cpi;
 	}
 }
