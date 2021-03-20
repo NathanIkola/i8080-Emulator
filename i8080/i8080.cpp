@@ -131,7 +131,7 @@ namespace i8080
 	}
 
 	//******************************
-	// Get a register pair
+	// Write a register pair
 	//******************************
 	void i8080::write_rp(const uint8_t& rp, const uint16_t val) noexcept
 	{
@@ -324,7 +324,7 @@ namespace i8080
 		// flip the carry bit if the numbers were of a different sign
 		// note that the sign of val is inverted now, so if they are
 		// equal then the signs were different initially
-		if ((val >> 7 == A >> 7) || (val == 0) && A >> 7) F ^= flags::C;
+		if ((val >> 7 == A >> 7) || ((val == 0) && A >> 7) || ((val >> 7 == 0) && A == 0)) F ^= flags::C;
 		return 0;
 	}
 
@@ -512,8 +512,6 @@ namespace i8080
 	uint8_t i8080::rc(const uint8_t& arg) noexcept
 	{
 		uint8_t con = ccc(arg);
-		// get the address we want to jump to
-		uint16_t addr = read16();
 		if ((con == 0 && !(F & flags::Z)) || (con == 1 && (F & flags::Z))
 			|| (con == 2 && !(F & flags::C)) || (con == 3 && (F & flags::C))
 			|| (con == 4 && !(F & flags::P)) || (con == 5 && (F & flags::P))
