@@ -239,6 +239,26 @@ namespace i8080
 		uint8_t cc(const uint8_t& arg) noexcept;
 
 		//******************************
+		// INR (increment register)
+		//******************************
+		uint8_t inr(const uint8_t& arg) noexcept;
+
+		//******************************
+		// XRA (XOR A with register)
+		//******************************
+		uint8_t xra(const uint8_t& arg) noexcept;
+
+		//******************************
+		// ADD register or memory to A
+		//******************************
+		uint8_t add(const uint8_t& arg) noexcept;
+
+		//******************************
+		// SUB register or memory to A
+		//******************************
+		uint8_t sub(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept 

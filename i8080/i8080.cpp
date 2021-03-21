@@ -631,17 +631,6 @@ namespace i8080
 		return 0;
 	}
 
-	//**********************************
-	// Load the program
-	//**********************************
-	void i8080::load_program(uint16_t offset) noexcept
-	{
-		// start loading
-		while (!file.eof()) memory[offset++] = file.get();
-		// set the stack to where the program finished
-		SP = offset;
-	}
-
 	//******************************
 	// Conditional CALL instruction
 	//******************************
@@ -667,6 +656,82 @@ namespace i8080
 		}
 
 		return 1;
+	}
+
+	//**********************************
+	// INR (increment register)
+	//**********************************
+	uint8_t i8080::inr(const uint8_t& arg) noexcept
+	{
+		uint8_t& reg = get_reg(dest(arg));
+		++reg;
+
+		return 0;
+	}
+
+	//******************************
+	// XRA (XOR A with register)
+	//******************************
+	uint8_t i8080::xra(const uint8_t& arg) noexcept
+	{
+		uint8_t src = get_reg(source(arg));
+		A = A ^ src;
+
+		// check for flags
+		F = 0;
+
+		if (A == 0) F |= flags::Z;
+		else if ((A >> 7) == 1) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// ADD register or memory to A
+	//******************************
+	uint8_t i8080::add(const uint8_t& arg) noexcept
+	{
+		uint8_t src = get_reg(source(arg));
+		A += src;
+
+		// check for flags
+		F = 0;
+
+		if (A == 0) F |= flags::Z;
+		else if ((A >> 7) == 1) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// SUB register or memory to A
+	//******************************
+	uint8_t i8080::sub(const uint8_t& arg) noexcept
+	{
+		uint8_t src = get_reg(source(arg));
+		A -= src;
+
+		// check for flags
+		F = 0;
+
+		if (A == 0) F |= flags::Z;
+		else if ((A >> 7) == 1) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//**********************************
+	// Load the program
+	//**********************************
+	void i8080::load_program(uint16_t offset) noexcept
+	{
+		// start loading
+		while (!file.eof()) memory[offset++] = file.get();
+		// set the stack to where the program finished
+		SP = offset;
 	}
 
 	//**********************************
@@ -697,37 +762,45 @@ namespace i8080
 		operations[0x00] = &i8080::nop;
 		operations[0x01] = &i8080::lxi;
 		operations[0x03] = &i8080::inx;
+		operations[0x04] = &i8080::inr;
 		operations[0x05] = &i8080::dcr;
 		operations[0x06] = &i8080::mvi;
 		operations[0x09] = &i8080::dad;
 		operations[0x0A] = &i8080::ldax;
+		operations[0x0C] = &i8080::inr;
 		operations[0x0D] = &i8080::dcr;
 		operations[0x0E] = &i8080::mvi;
 		operations[0x0F] = &i8080::rrc;
 
 		operations[0x11] = &i8080::lxi;
 		operations[0x13] = &i8080::inx;
+		operations[0x14] = &i8080::inr;
 		operations[0x15] = &i8080::dcr;
 		operations[0x16] = &i8080::mvi;
 		operations[0x19] = &i8080::dad;
 		operations[0x1A] = &i8080::ldax;
+		operations[0x1C] = &i8080::inr;
 		operations[0x1D] = &i8080::dcr;
 		operations[0x1E] = &i8080::mvi;
 
 		operations[0x23] = &i8080::inx;
+		operations[0x24] = &i8080::inr;
 		operations[0x25] = &i8080::dcr;
 		operations[0x21] = &i8080::lxi;
 		operations[0x26] = &i8080::mvi;
 		operations[0x29] = &i8080::dad;
+		operations[0x2C] = &i8080::inr;
 		operations[0x2D] = &i8080::dcr;
 		operations[0x2E] = &i8080::mvi;
 
 		operations[0x33] = &i8080::inx;
+		operations[0x34] = &i8080::inr;
 		operations[0x35] = &i8080::dcr;
 		operations[0x31] = &i8080::lxi;
 		operations[0x36] = &i8080::mvi;
 		operations[0x39] = &i8080::dad;
 		operations[0x3A] = &i8080::lda;
+		operations[0x3C] = &i8080::inr;
 		operations[0x3D] = &i8080::dcr;
 		operations[0x3E] = &i8080::mvi;
 
@@ -799,6 +872,24 @@ namespace i8080
 		operations[0x7E] = &i8080::mov;
 		operations[0x7F] = &i8080::mov;
 
+		operations[0x80] = &i8080::add;
+		operations[0x81] = &i8080::add;
+		operations[0x82] = &i8080::add;
+		operations[0x83] = &i8080::add;
+		operations[0x84] = &i8080::add;
+		operations[0x85] = &i8080::add;
+		operations[0x86] = &i8080::add;
+		operations[0x87] = &i8080::add;
+
+		operations[0x90] = &i8080::sub;
+		operations[0x91] = &i8080::sub;
+		operations[0x92] = &i8080::sub;
+		operations[0x93] = &i8080::sub;
+		operations[0x94] = &i8080::sub;
+		operations[0x95] = &i8080::sub;
+		operations[0x96] = &i8080::sub;
+		operations[0x97] = &i8080::sub;
+
 		operations[0xA0] = &i8080::ana;
 		operations[0xA1] = &i8080::ana;
 		operations[0xA2] = &i8080::ana;
@@ -807,6 +898,14 @@ namespace i8080
 		operations[0xA5] = &i8080::ana;
 		operations[0xA6] = &i8080::ana;
 		operations[0xA7] = &i8080::ana;
+		operations[0xA8] = &i8080::xra;
+		operations[0xA9] = &i8080::xra;
+		operations[0xAA] = &i8080::xra;
+		operations[0xAB] = &i8080::xra;
+		operations[0xAC] = &i8080::xra;
+		operations[0xAD] = &i8080::xra;
+		operations[0xAE] = &i8080::xra;
+		operations[0xAF] = &i8080::xra;
 
 		operations[0xC0] = &i8080::rc;
 		operations[0xC1] = &i8080::pop;
