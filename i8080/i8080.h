@@ -259,6 +259,16 @@ namespace i8080
 		uint8_t sub(const uint8_t& arg) noexcept;
 
 		//******************************
+		// Add register to A with carry
+		//******************************
+		uint8_t adc(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Sub register from A with borrow
+		//******************************
+		uint8_t sbb(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept 

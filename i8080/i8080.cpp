@@ -693,7 +693,9 @@ namespace i8080
 	uint8_t i8080::add(const uint8_t& arg) noexcept
 	{
 		uint8_t src = get_reg(source(arg));
-		A += src;
+		uint16_t a = A;
+		a += src;
+		A = a;
 
 		// check for flags
 		F = 0;
@@ -701,6 +703,7 @@ namespace i8080
 		if (A == 0) F |= flags::Z;
 		else if ((A >> 7) == 1) F |= flags::S;
 		if (parity(A)) F |= flags::P;
+		if (a & ~0xFF) F |= flags::C;
 
 		return 0;
 	}
@@ -711,7 +714,10 @@ namespace i8080
 	uint8_t i8080::sub(const uint8_t& arg) noexcept
 	{
 		uint8_t src = get_reg(source(arg));
-		A -= src;
+		uint16_t a = A;
+		src = ~src + 1;
+		a += src;
+		A = a;
 
 		// check for flags
 		F = 0;
@@ -719,6 +725,52 @@ namespace i8080
 		if (A == 0) F |= flags::Z;
 		else if ((A >> 7) == 1) F |= flags::S;
 		if (parity(A)) F |= flags::P;
+		if (a & ~0xFF) F |= flags::C;
+
+		return 0;
+	}
+
+	//******************************
+	// Add register to A with carry
+	//******************************
+	uint8_t i8080::adc(const uint8_t& arg) noexcept
+	{
+		uint8_t src = get_reg(source(arg));
+		uint16_t a = A;
+		if (F & flags::C) ++a;
+		a += src;
+		A = a;
+
+		// check for flags
+		F = 0;
+
+		if (A == 0) F |= flags::Z;
+		else if ((A >> 7) == 1) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+		if (a & ~0xFF) F |= flags::C;
+
+		return 0;
+	}
+
+	//******************************
+	// Sub register from A with borrow
+	//******************************
+	uint8_t i8080::sbb(const uint8_t& arg) noexcept
+	{
+		uint8_t src = get_reg(source(arg));
+		uint8_t a = A;
+		if (F & flags::C) ++src;
+		src = ~src + 1;
+		a += src;
+		A = a;
+
+		// check for flags
+		F = 0;
+
+		if (A == 0) F |= flags::Z;
+		else if ((A >> 7) == 1) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+		if (a & ~0xFF) F |= flags::C;
 
 		return 0;
 	}
@@ -880,6 +932,14 @@ namespace i8080
 		operations[0x85] = &i8080::add;
 		operations[0x86] = &i8080::add;
 		operations[0x87] = &i8080::add;
+		operations[0x88] = &i8080::adc;
+		operations[0x89] = &i8080::adc;
+		operations[0x8A] = &i8080::adc;
+		operations[0x8B] = &i8080::adc;
+		operations[0x8C] = &i8080::adc;
+		operations[0x8D] = &i8080::adc;
+		operations[0x8E] = &i8080::adc;
+		operations[0x8F] = &i8080::adc;
 
 		operations[0x90] = &i8080::sub;
 		operations[0x91] = &i8080::sub;
@@ -889,6 +949,14 @@ namespace i8080
 		operations[0x95] = &i8080::sub;
 		operations[0x96] = &i8080::sub;
 		operations[0x97] = &i8080::sub;
+		operations[0x98] = &i8080::sbb;
+		operations[0x99] = &i8080::sbb;
+		operations[0x9A] = &i8080::sbb;
+		operations[0x9B] = &i8080::sbb;
+		operations[0x9C] = &i8080::sbb;
+		operations[0x9D] = &i8080::sbb;
+		operations[0x9E] = &i8080::sbb;
+		operations[0x9F] = &i8080::sbb;
 
 		operations[0xA0] = &i8080::ana;
 		operations[0xA1] = &i8080::ana;
