@@ -269,6 +269,16 @@ namespace i8080
 		uint8_t sbb(const uint8_t& arg) noexcept;
 
 		//******************************
+		// OR A with register
+		//******************************
+		uint8_t ora(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Compare with accumulator
+		//******************************
+		uint8_t cmp(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept 

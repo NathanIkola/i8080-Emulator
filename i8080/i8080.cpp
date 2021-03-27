@@ -775,6 +775,49 @@ namespace i8080
 		return 0;
 	}
 
+	//******************************
+	// OR A with register
+	//******************************
+	uint8_t i8080::ora(const uint8_t& arg) noexcept
+	{
+		uint8_t src = get_reg(source(arg));
+		A |= src;
+
+		// check for flags
+		F = 0;
+
+		if (A == 0) F |= flags::Z;
+		else if ((A >> 7) == 1) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
+	//******************************
+	// Compare with accumulator
+	//******************************
+	uint8_t i8080::cmp(const uint8_t& arg) noexcept
+	{
+		uint8_t val = get_reg(source(arg));
+		// put it in 2's complement negative
+		val = ~val + 1;
+		// perform A + -val
+		int16_t result = A + val;
+		// clear the flags
+		F &= 0;
+
+		// lower byte is equal
+		if ((result & 0xFF) == 0)
+			F |= flags::Z;
+		// set the carry bit as required
+		else if (!(result & (1 << 8))) F |= flags::C;
+		// flip the carry bit if the numbers were of a different sign
+		// note that the sign of val is inverted now, so if they are
+		// equal then the signs were different initially
+		if ((val >> 7 == A >> 7) || ((val == 0) && A >> 7) || ((val >> 7 == 0) && A == 0)) F ^= flags::C;
+		return 0;
+	}
+
 	//**********************************
 	// Load the program
 	//**********************************
@@ -974,6 +1017,23 @@ namespace i8080
 		operations[0xAD] = &i8080::xra;
 		operations[0xAE] = &i8080::xra;
 		operations[0xAF] = &i8080::xra;
+
+		operations[0xB0] = &i8080::ora;
+		operations[0xB1] = &i8080::ora;
+		operations[0xB2] = &i8080::ora;
+		operations[0xB3] = &i8080::ora;
+		operations[0xB4] = &i8080::ora;
+		operations[0xB5] = &i8080::ora;
+		operations[0xB6] = &i8080::ora;
+		operations[0xB7] = &i8080::ora;
+		operations[0xB8] = &i8080::cmp;
+		operations[0xB9] = &i8080::cmp;
+		operations[0xBA] = &i8080::cmp;
+		operations[0xBB] = &i8080::cmp;
+		operations[0xBC] = &i8080::cmp;
+		operations[0xBD] = &i8080::cmp;
+		operations[0xBE] = &i8080::cmp;
+		operations[0xBF] = &i8080::cmp;
 
 		operations[0xC0] = &i8080::rc;
 		operations[0xC1] = &i8080::pop;
