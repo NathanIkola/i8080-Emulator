@@ -390,8 +390,11 @@ namespace i8080
 	uint8_t i8080::dad(const uint8_t& arg) noexcept
 	{
 		uint16_t hl = read_rp(2);
+		uint16_t hl_pre = hl;
 		hl += read_rp(rp(arg));
 		write_rp(2, hl);
+		if (hl_pre > hl) F |= flags::C;
+		else F &= ~flags::C;
 		return 0;
 	}
 
@@ -818,6 +821,90 @@ namespace i8080
 		return 0;
 	}
 
+	//******************************
+	// Decrement register pair
+	//******************************
+	uint8_t i8080::dcx(const uint8_t& arg) noexcept
+	{
+		uint8_t reg = rp(arg);
+		uint16_t rp = read_rp(reg);
+		rp += 0xFFFF;
+		write_rp(reg, rp);
+
+		return 0;
+	}
+
+	//******************************
+	// Store A in memory location
+	//******************************
+	uint8_t i8080::sta(const uint8_t& arg) noexcept
+	{
+		uint16_t address = read16();
+		memory[address] = A;
+
+		return 0;
+	}
+
+	//**********************************
+	// Load H and L direct
+	//**********************************
+	uint8_t i8080::lhld(const uint8_t& arg) noexcept
+	{
+		uint16_t address = read16();
+		L = memory[address];
+		H = memory[address + 1];
+		return 0;
+	}
+
+	//**********************************
+	// Store H and L direct
+	//**********************************
+	uint8_t i8080::shld(const uint8_t& arg) noexcept
+	{
+		uint16_t address = read16();
+		memory[address] = L;
+		memory[address + 1] = H;
+		return 0;
+	}
+
+	//******************************
+	// Store accumulator in memory
+	//******************************
+	uint8_t i8080::stax(const uint8_t& arg) noexcept
+	{
+		uint8_t reg = rp(arg);
+		uint16_t address = read_rp(reg);
+		memory[address] = A;
+		return 0;
+	}
+
+	//**********************************
+	// Set the carry bit
+	//**********************************
+	uint8_t i8080::stc(const uint8_t& arg) noexcept
+	{
+		F |= flags::C;
+		return 0;
+	}
+
+	//******************************
+	// Complement the carry bit
+	//******************************
+	uint8_t i8080::cmc(const uint8_t& arg) noexcept
+	{
+		F ^= flags::C;
+		return 0;
+	}
+
+	//******************************
+	// Complement A
+	//******************************
+	uint8_t i8080::cma(const uint8_t& arg) noexcept
+	{
+		A = ~A;
+		return 0;
+	}
+
 	//**********************************
 	// Load the program
 	//**********************************
@@ -856,48 +943,60 @@ namespace i8080
 		// now start explicitly filling it
 		operations[0x00] = &i8080::nop;
 		operations[0x01] = &i8080::lxi;
+		operations[0x02] = &i8080::stax;
 		operations[0x03] = &i8080::inx;
 		operations[0x04] = &i8080::inr;
 		operations[0x05] = &i8080::dcr;
 		operations[0x06] = &i8080::mvi;
 		operations[0x09] = &i8080::dad;
 		operations[0x0A] = &i8080::ldax;
+		operations[0x0B] = &i8080::dcx;
 		operations[0x0C] = &i8080::inr;
 		operations[0x0D] = &i8080::dcr;
 		operations[0x0E] = &i8080::mvi;
 		operations[0x0F] = &i8080::rrc;
 
 		operations[0x11] = &i8080::lxi;
+		operations[0x12] = &i8080::stax;
 		operations[0x13] = &i8080::inx;
 		operations[0x14] = &i8080::inr;
 		operations[0x15] = &i8080::dcr;
 		operations[0x16] = &i8080::mvi;
 		operations[0x19] = &i8080::dad;
 		operations[0x1A] = &i8080::ldax;
+		operations[0x1B] = &i8080::dcx;
 		operations[0x1C] = &i8080::inr;
 		operations[0x1D] = &i8080::dcr;
 		operations[0x1E] = &i8080::mvi;
 
+		operations[0x22] = &i8080::shld;
 		operations[0x23] = &i8080::inx;
 		operations[0x24] = &i8080::inr;
 		operations[0x25] = &i8080::dcr;
 		operations[0x21] = &i8080::lxi;
 		operations[0x26] = &i8080::mvi;
 		operations[0x29] = &i8080::dad;
+		operations[0x2A] = &i8080::lhld;
+		operations[0x2B] = &i8080::dcx;
 		operations[0x2C] = &i8080::inr;
 		operations[0x2D] = &i8080::dcr;
 		operations[0x2E] = &i8080::mvi;
+		operations[0x2F] = &i8080::cma;
 
+		operations[0x32] = &i8080::sta;
 		operations[0x33] = &i8080::inx;
 		operations[0x34] = &i8080::inr;
 		operations[0x35] = &i8080::dcr;
 		operations[0x31] = &i8080::lxi;
 		operations[0x36] = &i8080::mvi;
+		operations[0x37] = &i8080::stc;
 		operations[0x39] = &i8080::dad;
 		operations[0x3A] = &i8080::lda;
+		operations[0x3B] = &i8080::dcx;
 		operations[0x3C] = &i8080::inr;
 		operations[0x3D] = &i8080::dcr;
 		operations[0x3E] = &i8080::mvi;
+		operations[0x3F] = &i8080::cmc;
 
 		operations[0x40] = &i8080::mov;
 		operations[0x41] = &i8080::mov;

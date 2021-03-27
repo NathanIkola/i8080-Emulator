@@ -279,6 +279,46 @@ namespace i8080
 		uint8_t cmp(const uint8_t& arg) noexcept;
 
 		//******************************
+		// Decrement register pair
+		//******************************
+		uint8_t dcx(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Store A in memory location
+		//******************************
+		uint8_t sta(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Load H and L direct
+		//******************************
+		uint8_t lhld(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Store H and L direct
+		//******************************
+		uint8_t shld(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Store accumulator in memory
+		//******************************
+		uint8_t stax(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Set the carry bit
+		//******************************
+		uint8_t stc(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Complement the carry bit
+		//******************************
+		uint8_t cmc(const uint8_t& arg) noexcept;
+
+		//******************************
+		// Complement A
+		//******************************
+		uint8_t cma(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept 
