@@ -905,6 +905,38 @@ namespace i8080
 		return 0;
 	}
 
+	//******************************
+	// Decimal adjust accumulator
+	//******************************
+	uint8_t i8080::daa(const uint8_t& arg) noexcept
+	{
+		F &= flags::C;
+
+		uint8_t lower = A & 0xF;
+		if (lower > 9 || F & flags::A)
+		{
+			A += 6;
+			lower += 6;
+			if (lower & 0xF0) F | flags::A;
+			lower = A & 0xF;
+		}
+
+		uint8_t higher = (A & 0xF0) >> 4;
+		if (higher > 9 || F & flags::C)
+		{
+			A += (6 << 4);
+			higher += 6;
+			if (higher & 0xF0) F | flags::C;
+			higher = A & 0xF0;
+		}
+
+		if (A == 0) F |= flags::Z;
+		else if ((A >> 7) == 1) F |= flags::S;
+		if (parity(A)) F |= flags::P;
+
+		return 0;
+	}
+
 	//**********************************
 	// Load the program
 	//**********************************
@@ -975,6 +1007,7 @@ namespace i8080
 		operations[0x25] = &i8080::dcr;
 		operations[0x21] = &i8080::lxi;
 		operations[0x26] = &i8080::mvi;
+		operations[0x27] = &i8080::daa;
 		operations[0x29] = &i8080::dad;
 		operations[0x2A] = &i8080::lhld;
 		operations[0x2B] = &i8080::dcx;

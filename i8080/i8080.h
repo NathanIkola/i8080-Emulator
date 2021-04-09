@@ -319,6 +319,11 @@ namespace i8080
 		uint8_t cma(const uint8_t& arg) noexcept;
 
 		//******************************
+		// Decimal adjust accumulator
+		//******************************
+		uint8_t daa(const uint8_t& arg) noexcept;
+
+		//******************************
 		// Unimplemented instructions
 		//******************************
 		inline uint8_t bad(const uint8_t& arg) noexcept 
